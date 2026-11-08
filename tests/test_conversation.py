@@ -153,3 +153,30 @@ def test_status_when_nothing_running():
     o = ready_orch()
     r = o.handle_status("s1")
     assert r["type"] == "info"
+
+def test_typed_yes_confirms_the_plan():
+    replies = iter([intent(), intent(kind="confirm")])
+    o = Orchestrator(parse=lambda h, c, t: next(replies), plan=lambda i: FAKE_PLAN,
+                     deploy=lambda pid: {"deployment_id": "d_1", "state": "pending", "message": ""},
+                     status=fake)
+    o.handle_chat("s1", "create a web app")
+    r = o.handle_chat("s1", "yes go ahead")
+    assert r["type"] == "status"
+    assert o.sessions["s1"].state == State.DEPLOYING
+
+
+def test_typed_yes_without_plan_deploys_nothing():
+    calls = []
+    o = Orchestrator(parse=lambda h, c, t: intent(kind="confirm"), plan=fake,
+                     deploy=lambda pid: calls.append(pid), status=fake)
+    o.handle_chat("s1", "yes")
+    assert calls == []
+    assert o.sessions["s1"].state == State.IDLE
+def test_typed_cancel_cancels_the_plan():
+    replies = iter([intent(), intent(kind="cancel")])
+    o = Orchestrator(parse=lambda h, c, t: next(replies), plan=lambda i: FAKE_PLAN,
+                     deploy=fake, status=fake)
+    o.handle_chat("s1", "create a web app")
+    r = o.handle_chat("s1", "no, cancel")
+    assert r["type"] == "info"
+    assert o.sessions["s1"].state == State.CANCELLED
