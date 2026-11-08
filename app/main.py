@@ -18,6 +18,7 @@ class ConfirmIn(BaseModel):
     session_id: str
     plan_id: str
     approve: bool
+    accept_cost: bool = False
 
 
 @app.get("/health")
@@ -38,3 +39,6 @@ def confirm(body: ConfirmIn):
 @app.get("/status/{session_id}")
 def status(session_id: str):
     return orch.handle_status(session_id)
+@app.post("/confirm")
+def confirm(body: ConfirmIn):
+    return orch.handle_confirm(body.session_id, body.plan_id, body.approve, body.accept_cost)

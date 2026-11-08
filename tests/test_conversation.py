@@ -203,3 +203,61 @@ def test_after_three_questions_defaults_are_used():
     r = o.handle_chat("s1", "a web app")
     assert r["type"] == "plan"
     assert any("Defaults used" in w for w in r["warnings"])
+EXPENSIVE_PLAN = {"plan_id": "p_9", "summary": [], "estimated_monthly_cost_usd": 80, "warnings": []}
+
+def expensive_orch(calls):
+    o = Orchestrator(parse=lambda h, c, t: intent(), plan=lambda i: dict(EXPENSIVE_PLAN),
+                     deploy=lambda pid: calls.append(pid) or {"deployment_id": "d_9", "state": "pending", "message": ""},
+                     status=fake, cost_limit=30)
+    o.handle_chat("s1", "create something big")
+    return o
+
+
+def test_expensive_plan_needs_extra_confirmation():
+    calls = []
+    o = expensive_orch(calls)
+    r = o.handle_confirm("s1", "p_9", True)
+    assert r["type"] == "cost_warning"
+    assert calls == []
+    assert o.sessions["s1"].state == State.AWAITING_CONFIRMATION
+
+
+def test_double_click_does_not_accept_cost():
+    calls = []
+    o = expensive_orch(calls)
+    o.handle_confirm("s1", "p_9", True)
+    r = o.handle_confirm("s1", "p_9", True)
+    assert r["type"] == "cost_warning"
+    assert calls == []
+
+
+def test_accept_cost_deploys():
+    calls = []
+    o = expensive_orch(calls)
+    o.handle_confirm("s1", "p_9", True)
+    r = o.handle_confirm("s1", "p_9", True, accept_cost=True)
+    assert r["type"] == "status"
+    assert len(calls) == 1
+def test_message_while_deploying_is_refused():
+    o = ready_orch()
+    o.handle_confirm("s1", "p_1", True)
+    r = o.handle_chat("s1", "what is happening?")
+    assert r["type"] == "info"
+    assert o.sessions["s1"].state == State.DEPLOYING
+
+def test_change_during_review_invalidates_old_plan():
+    replies = iter([intent(), intent()])
+    plans = iter([{**FAKE_PLAN, "plan_id": "p_1"}, {**FAKE_PLAN, "plan_id": "p_2"}])
+    o = Orchestrator(parse=lambda h, c, t: next(replies), plan=lambda i: next(plans),
+                     deploy=lambda pid: {"deployment_id": "d_1", "state": "pending", "message": ""},
+                     status=fake)
+    o.handle_chat("s1", "create a web app")
+    r = o.handle_chat("s1", "actually, create it in France Central")
+    assert r["plan_id"] == "p_2"
+
+    old = o.handle_confirm("s1", "p_1", True)
+    assert old["type"] == "error"
+
+    new = o.handle_confirm("s1", "p_2", True)
+    assert new["type"] == "status"
+
