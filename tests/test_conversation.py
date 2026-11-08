@@ -62,10 +62,10 @@ def test_go_refuses_illegal_move():
 
 
 
-def intent(kind="action", missing=None, question=None, answer=None):
+def intent(kind="action", missing=None, question=None, answer=None, resources=None):
     return SimpleNamespace(kind=kind, missing_fields=missing or [],
-                           clarifying_question=question, answer=answer)
-
+                           clarifying_question=question, answer=answer,
+                           resources=resources or [])
 
 FAKE_PLAN = {"plan_id": "p_1", "summary": [], "estimated_monthly_cost_usd": 5, "warnings": []}
 
@@ -180,3 +180,26 @@ def test_typed_cancel_cancels_the_plan():
     r = o.handle_chat("s1", "no, cancel")
     assert r["type"] == "info"
     assert o.sessions["s1"].state == State.CANCELLED
+from app.conversation.orchestrator import apply_defaults
+
+
+def test_apply_defaults_fills_region_and_sku():
+    i = intent(missing=["region"], resources=[SimpleNamespace(type="webapp", region=None, sku=None)])
+    used = apply_defaults(i)
+    assert i.resources[0].region == "westeurope"
+    assert i.resources[0].sku == "B1"
+    assert i.missing_fields == []
+    assert len(used) == 2
+
+
+def test_after_three_questions_defaults_are_used():
+    o = Orchestrator(
+        parse=lambda h, c, t: intent(missing=["region"], question="Which region?",
+                                     resources=[SimpleNamespace(type="webapp", region=None, sku=None)]),
+        plan=lambda i: dict(FAKE_PLAN), deploy=fake, status=fake)
+    for _ in range(3):
+        r = o.handle_chat("s1", "a web app")
+        assert r["type"] == "question"
+    r = o.handle_chat("s1", "a web app")
+    assert r["type"] == "plan"
+    assert any("Defaults used" in w for w in r["warnings"])

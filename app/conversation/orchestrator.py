@@ -5,7 +5,22 @@ from threading import RLock
 from app.conversation.states import ALLOWED, TERMINAL, State
 
 PLAN_TTL = 600  # seconds = 10 minutes
+MAX_CLARIFICATIONS = 3
+DEFAULT_REGION = "westeurope"
+DEFAULT_SKUS = {"webapp": "B1", "storage": "Standard_LRS", "sql": "Basic", "keyvault": "standard"}
 
+def apply_defaults(intent):
+        used = []
+        for r in intent.resources:
+            rtype = getattr(r.type, "value", r.type)
+            if not r.region:
+             r.region = DEFAULT_REGION
+             used.append(f"region {DEFAULT_REGION}")
+            if not r.sku and rtype in DEFAULT_SKUS:
+             r.sku = DEFAULT_SKUS[rtype]
+             used.append(f"{rtype} tier {r.sku}")
+        intent.missing_fields = []
+        return used 
 
 @dataclass
 class Session:
@@ -16,6 +31,7 @@ class Session:
     plan: dict | None = None
     deployment_id: str | None = None
     updated: float = field(default_factory=time.time)
+    clarifications: int = 0
 
 
 class Orchestrator:
@@ -46,7 +62,8 @@ class Orchestrator:
 
             if s.state in TERMINAL:
                 self._go(s, State.IDLE)
-
+            if s.state == State.IDLE:
+                s.clarifications = 0
             result = self.parse(s.history, s.intent, text)
             s.history.append(("user", text))
 
@@ -65,9 +82,13 @@ class Orchestrator:
 
             s.intent = result
 
+            defaults_used = []
             if result.missing_fields:
-                self._go(s, State.NEEDS_INFO)
-                return {"type": "question", "text": result.clarifying_question}
+                s.clarifications += 1
+                if s.clarifications <= MAX_CLARIFICATIONS:
+                    self._go(s, State.NEEDS_INFO)
+                    return {"type": "question", "text": result.clarifying_question}
+                defaults_used = apply_defaults(result)
 
             problems = self.check(result)
             if problems:
@@ -80,7 +101,9 @@ class Orchestrator:
             except Exception as e:
                 self._go(s, State.FAILED)
                 return {"type": "error", "text": f"Planning failed: {e}"}
-
+            if defaults_used:
+                note = "Defaults used: " + ", ".join(defaults_used) + ". Is that okay?"
+                s.plan = {**s.plan, "warnings": s.plan.get("warnings", []) + [note]}
             self._go(s, State.AWAITING_CONFIRMATION)
             return {"type": "plan", **s.plan}
 
@@ -120,3 +143,5 @@ class Orchestrator:
                 self._go(s, State.FAILED)
 
             return {"type": "status", **st}
+
+    
