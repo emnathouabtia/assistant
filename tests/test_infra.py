@@ -21,3 +21,16 @@ def test_uppercase_runtime():
 
 def test_tags_are_set():
     p = webapp_params(ResourceSpec(type="webapp", name="demo"))
+import shutil
+import subprocess
+
+import pytest
+
+
+@pytest.mark.skipif(shutil.which("az") is None, reason="Azure CLI not installed")
+def test_webapp_bicep_compiles():
+    result = subprocess.run(
+        ["az", "bicep", "build", "--file", "app/infra/modules/webapp.bicep", "--stdout"],
+        capture_output=True, text=True, shell=True,
+    )
+    assert result.returncode == 0, result.stderr
