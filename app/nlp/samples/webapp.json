@@ -4,7 +4,7 @@
     {
       "type": "webapp",
       "name": "demo-app",
-      "region": "spain central",
+      "region": "spaincentral",
       "sku": "F1",
       "runtime": "python"
     }

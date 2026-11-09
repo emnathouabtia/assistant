@@ -4,7 +4,7 @@
     {
       "type": "keyvault",
       "name": "demo-vault",
-      "region": "spain central",
+      "region": "spaincentral",
       "sku": "standard"
     }
   ],
