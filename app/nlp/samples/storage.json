@@ -4,7 +4,7 @@
     {
       "type": "storage",
       "name": "demostorage",
-      "region": "spain central",
+      "region": "spaincentral",
       "sku": "Standard_LRS",
       "redundancy": "LRS"
     }
