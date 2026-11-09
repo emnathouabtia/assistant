@@ -1,0 +1,14 @@
+{
+  "kind": "action",
+  "resources": [
+    {
+      "type": "sql",
+      "name": "demo-database",
+      "region": "spain central",
+      "sku": "Basic"
+    }
+  ],
+  "missing_fields": [],
+  "clarifying_question": null,
+  "answer": null
+}

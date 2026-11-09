@@ -1,0 +1,14 @@
+{
+  "kind": "action",
+  "resources": [
+    {
+      "type": "keyvault",
+      "name": "demo-vault",
+      "region": "spain central",
+      "sku": "standard"
+    }
+  ],
+  "missing_fields": [],
+  "clarifying_question": null,
+  "answer": null
+}

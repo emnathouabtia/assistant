@@ -1,0 +1,14 @@
+{
+  "kind": "action",
+  "resources": [
+    {
+      "type": "pipeline",
+      "name": "demo-pipeline",
+      "framework": "python",
+      "stages": ["build", "test", "deploy"]
+    }
+  ],
+  "missing_fields": [],
+  "clarifying_question": null,
+  "answer": null
+}

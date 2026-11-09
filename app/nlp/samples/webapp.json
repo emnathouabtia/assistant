@@ -1,0 +1,15 @@
+{
+  "kind": "action",
+  "resources": [
+    {
+      "type": "webapp",
+      "name": "demo-app",
+      "region": "spain central",
+      "sku": "F1",
+      "runtime": "python"
+    }
+  ],
+  "missing_fields": [],
+  "clarifying_question": null,
+  "answer": null
+}

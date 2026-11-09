@@ -1,0 +1,15 @@
+{
+  "kind": "action",
+  "resources": [
+    {
+      "type": "storage",
+      "name": "demostorage",
+      "region": "spain central",
+      "sku": "Standard_LRS",
+      "redundancy": "LRS"
+    }
+  ],
+  "missing_fields": [],
+  "clarifying_question": null,
+  "answer": null
+}
