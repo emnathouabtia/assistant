@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 SUPPORTED = {t.value for t in ResourceType}
 HISTORY_TURNS = 6
-DEFAULT_REGION = "westeurope"       # placeholder only; used while "region" is in missing_fields
+DEFAULT_REGION = "spaincentral"     # placeholder only; used while "region" is in missing_fields
 
 # ---------------------------------------------------------------- lenient model schema
 
@@ -62,14 +62,15 @@ QUESTIONS = {
 
 KNOWN_SKUS = {
     "webapp": ["F1", "B1"],
-    "storage": ["Standard_LRS", "Standard_GRS"],
-    "sql": ["Basic", "S0"],
+    "storage": ["Standard_LRS"],
+    "sql": ["Basic"],
     "keyvault": ["standard"],
 }
 RUNTIMES = {"python": "python", "python3": "python", "py": "python",
             "node": "node", "nodejs": "node", "javascript": "node", "js": "node"}
 REGION_ALIASES = {"europedelouest": "westeurope", "francecentre": "francecentral",
-                  "francecentrale": "francecentral"}
+                  "francecentrale": "francecentral", "espagnecentrale": "spaincentral",
+                  "espagnecentre": "spaincentral"}
 
 
 def _ascii(value: str) -> str:

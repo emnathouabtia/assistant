@@ -4,8 +4,11 @@
     {
       "type": "pipeline",
       "name": "demo-pipeline",
-      "framework": "python",
-      "stages": ["build", "test", "deploy"]
+      "runtime": "python",
+      "params": {
+        "branch": "main",
+        "app_name": "demo-app"
+      }
     }
   ],
   "missing_fields": [],
