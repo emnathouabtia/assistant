@@ -28,7 +28,7 @@ Rules:
 4. NEVER invent values. Anything the user did not state is null. Never guess a name or a region.
 5. name: a short project name taken from the user's words, lowercase letters, digits and hyphens only, 3 to 24 characters. null if the user gave none.
 6. region: the Azure region as the user said it (for example "Spain Central"). null if not stated. This project deploys to Spain Central only; still copy whatever region the user says, because A3 decides whether it is allowed. Pipelines do not need a region: leave it null.
-7. sku: only if stated or clearly implied. Allowed values: webapp "F1" (free) or "B1" (basic); storage "Standard_LRS" or "Standard_GRS"; sql "Basic" or "S0"; keyvault "standard". Otherwise null.
+7. sku: only if stated or clearly implied. Allowed values: webapp "F1" (free) or "B1" (basic); storage "Standard_LRS" ; sql "Basic"; keyvault "standard". Otherwise null.
 8. runtime: "python" or "node" for webapp and pipeline, if stated. Otherwise null.
 9. For a pipeline, put {"branch": ..., "app_name": ...} in params only for the values the user stated (app_name is the web app it deploys to).
 10. clarifying_question: if name is null for any resource (or region for a non-pipeline resource), write ONE short question that asks for exactly ONE missing thing: the name first, then the region. Otherwise null.

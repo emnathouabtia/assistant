@@ -62,8 +62,8 @@ QUESTIONS = {
 
 KNOWN_SKUS = {
     "webapp": ["F1", "B1"],
-    "storage": ["Standard_LRS", "Standard_GRS"],
-    "sql": ["Basic", "S0"],
+    "storage": ["Standard_LRS"],
+    "sql": ["Basic"],
     "keyvault": ["standard"],
 }
 RUNTIMES = {"python": "python", "python3": "python", "py": "python",

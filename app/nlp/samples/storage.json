@@ -5,8 +5,7 @@
       "type": "storage",
       "name": "demostorage",
       "region": "spaincentral",
-      "sku": "Standard_LRS",
-      "redundancy": "LRS"
+      "sku": "Standard_LRS"
     }
   ],
   "missing_fields": [],
