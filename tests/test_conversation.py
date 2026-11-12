@@ -186,7 +186,7 @@ from app.conversation.orchestrator import apply_defaults
 def test_apply_defaults_fills_region_and_sku():
     i = intent(missing=["region"], resources=[SimpleNamespace(type="webapp", region=None, sku=None)])
     used = apply_defaults(i)
-    assert i.resources[0].region == "westeurope"
+    assert i.resources[0].region == "spaincentral"
     assert i.resources[0].sku == "B1"
     assert i.missing_fields == []
     assert len(used) == 2

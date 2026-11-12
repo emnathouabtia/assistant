@@ -27,7 +27,7 @@ Rules:
    - pipeline: CI/CD pipeline, build and deploy pipeline, Azure DevOps pipeline
 4. NEVER invent values. Anything the user did not state is null. Never guess a name or a region.
 5. name: a short project name taken from the user's words, lowercase letters, digits and hyphens only, 3 to 24 characters. null if the user gave none.
-6. region: the Azure region as the user said it (for example "West Europe", "France Central"). null if not stated. Pipelines do not need a region: leave it null.
+6. region: the Azure region as the user said it (for example "Spain Central"). null if not stated. This project deploys to Spain Central only; still copy whatever region the user says, because A3 decides whether it is allowed. Pipelines do not need a region: leave it null.
 7. sku: only if stated or clearly implied. Allowed values: webapp "F1" (free) or "B1" (basic); storage "Standard_LRS" or "Standard_GRS"; sql "Basic" or "S0"; keyvault "standard". Otherwise null.
 8. runtime: "python" or "node" for webapp and pipeline, if stated. Otherwise null.
 9. For a pipeline, put {"branch": ..., "app_name": ...} in params only for the values the user stated (app_name is the web app it deploys to).
@@ -49,9 +49,9 @@ def _res(type_, name=None, region=None, sku=None, runtime=None, params=None):
 EXAMPLES = [
     # 1. complete request
     {"current_intent": None,
-     "message": "Create a Python web app called shop in West Europe",
+     "message": "Create a Python web app called shop in Spain Central",
      "output": {"kind": "action",
-                "resources": [_res("webapp", "shop", "West Europe", runtime="python")],
+                "resources": [_res("webapp", "shop", "Spain Central", runtime="python")],
                 "clarifying_question": None, "answer": None}},
     # 2. missing name and region: ask for the name first, one question only
     {"current_intent": None,
@@ -69,16 +69,16 @@ EXAMPLES = [
                 "answer": None}},
     # 4. last answer completes the intent
     {"current_intent": {"resources": [_res("sql", "shop-db")]},
-     "message": "France Central",
+     "message": "Spain Central",
      "output": {"kind": "action",
-                "resources": [_res("sql", "shop-db", "France Central")],
+                "resources": [_res("sql", "shop-db", "Spain Central")],
                 "clarifying_question": None, "answer": None}},
     # 5. several resources in one request
     {"current_intent": None,
-     "message": "A storage account and a key vault named archive in West Europe",
+     "message": "A storage account and a key vault named archive in Spain Central",
      "output": {"kind": "action",
-                "resources": [_res("storage", "archive", "West Europe"),
-                              _res("keyvault", "archive", "West Europe")],
+                "resources": [_res("storage", "archive", "Spain Central"),
+                              _res("keyvault", "archive", "Spain Central")],
                 "clarifying_question": None, "answer": None}},
     # 6. pipeline: no region needed
     {"current_intent": None,
@@ -89,9 +89,9 @@ EXAMPLES = [
                 "clarifying_question": None, "answer": None}},
     # 7. French request
     {"current_intent": None,
-     "message": "Crée un compte de stockage nommé archive dans France Central",
+     "message": "Crée un compte de stockage nommé archive en Espagne centrale",
      "output": {"kind": "action",
-                "resources": [_res("storage", "archive", "France Central")],
+                "resources": [_res("storage", "archive", "Espagne centrale")],
                 "clarifying_question": None, "answer": None}},
     # 8. question
     {"current_intent": None,
@@ -100,10 +100,10 @@ EXAMPLES = [
                 "answer": "A resource group is a container that holds related Azure resources. "
                           "Deleting the group deletes everything inside it."}},
     # 9. confirm / cancel (only meaningful while a plan is shown; the orchestrator checks that)
-    {"current_intent": {"resources": [_res("sql", "shop-db", "West Europe")]},
+    {"current_intent": {"resources": [_res("sql", "shop-db", "Spain Central")]},
      "message": "yes, go ahead",
      "output": {"kind": "confirm", "resources": [], "clarifying_question": None, "answer": None}},
-    {"current_intent": {"resources": [_res("sql", "shop-db", "West Europe")]},
+    {"current_intent": {"resources": [_res("sql", "shop-db", "Spain Central")]},
      "message": "annule",
      "output": {"kind": "cancel", "resources": [], "clarifying_question": None, "answer": None}},
     # 10. unsupported

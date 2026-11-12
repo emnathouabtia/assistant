@@ -6,7 +6,7 @@ from app.conversation.states import ALLOWED, TERMINAL, State
 
 PLAN_TTL = 600  # seconds = 10 minutes
 MAX_CLARIFICATIONS = 3
-DEFAULT_REGION = "westeurope"
+DEFAULT_REGION = "spaincentral"
 DEFAULT_SKUS = {"webapp": "B1", "storage": "Standard_LRS", "sql": "Basic", "keyvault": "standard"}
 
 def apply_defaults(intent):
