@@ -186,7 +186,7 @@ from app.conversation.orchestrator import apply_defaults
 def test_apply_defaults_fills_region_and_sku():
     i = intent(missing=["region"], resources=[SimpleNamespace(type="webapp", region=None, sku=None)])
     used = apply_defaults(i)
-    assert i.resources[0].region == "westeurope"
+    assert i.resources[0].region == "spaincentral"
     assert i.resources[0].sku == "B1"
     assert i.missing_fields == []
     assert len(used) == 2
@@ -261,3 +261,15 @@ def test_change_during_review_invalidates_old_plan():
     new = o.handle_confirm("s1", "p_2", True)
     assert new["type"] == "status"
 
+def test_defaults_replace_region_placeholder():
+    i = intent(missing=["region"],
+               resources=[SimpleNamespace(type="webapp", name="shop", region="westeurope", sku=None)])
+    apply_defaults(i)
+    assert i.resources[0].region == "spaincentral"
+
+
+def test_defaults_mention_placeholder_name():
+    i = intent(missing=["name"],
+               resources=[SimpleNamespace(type="webapp", name="my-webapp", region="spaincentral", sku="B1")])
+    used = apply_defaults(i)
+    assert "name my-webapp" in used

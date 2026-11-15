@@ -11,11 +11,11 @@ class ResourceType(str, Enum):
 class ResourceSpec(BaseModel):
     type: ResourceType
     name: str = Field(min_length=3, max_length=24, pattern=r"^[a-z0-9-]+$")
-    region: str = "westeurope"
+    region: str = "spaincentral"
     sku: Optional[str] = None # e.g. "B1", "Standard_LRS", "Basic"
     runtime: Optional[str] = None # webapp / pipeline: "python", "node"
     params: dict = Field(default_factory=dict) # type-specific extras
-    
+
 class Intent(BaseModel):
     kind: Literal["action", "question", "confirm", "cancel", "chitchat"]
     resources: List[ResourceSpec] = Field(default_factory=list)

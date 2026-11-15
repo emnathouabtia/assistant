@@ -38,7 +38,7 @@ The allowed moves are stored as data (`ALLOWED` in `states.py`). Every state cha
 4. **Plans expire after 10 minutes**, because the state of Azure may have changed.
 5. **The session moves to DEPLOYING before B3 is called.** A second click finds the wrong state and is refused, so a double click cannot deploy twice.
 6. **Extra confirmation above the cost limit.** If the estimated monthly cost is above the limit from A3, the user gets a `cost_warning` and must send `accept_cost: true` (or type "yes" after the warning). Clicking Confirm twice is not enough.
-7. **At most 3 clarifying questions.** After that, the cheapest allowed defaults are used (for example region `westeurope`, web app tier `B1`) and a note "Defaults used: … Is that okay?" is added to the plan's warnings. The user still has to confirm.
+7. **At most 3 clarifying questions.** After that, the cheapest allowed defaults are used (for example region `spaincentral`, web app tier `B1`) and a note "Defaults used: … Is that okay?" is added to the plan's warnings. The user still has to confirm.
 
 ## Endpoints
 
