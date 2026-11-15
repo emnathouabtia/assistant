@@ -1,0 +1,38 @@
+trigger:
+  branches:
+    include:
+      - {{ branch }}
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Build
+    jobs:
+      - job: build_and_test
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '{{ node_version }}'
+          - script: |
+              npm install
+              {{ test_command }}
+            displayName: Install and test
+          - publish: $(System.DefaultWorkingDirectory)
+            artifact: drop
+
+  - stage: Deploy
+    dependsOn: Build
+    jobs:
+      - deployment: deploy_web
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebApp@1
+                  inputs:
+                    azureSubscription: '{{ service_connection }}'
+                    appType: webAppLinux
+                    appName: '{{ app_name }}'
+                    package: $(Pipeline.Workspace)/drop

@@ -1,0 +1,39 @@
+trigger:
+  branches:
+    include:
+      - {{ branch }}
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Build
+    jobs:
+      - job: build_and_test
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '{{ python_version }}'
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+              {{ test_command }}
+            displayName: Install and test
+          - publish: $(System.DefaultWorkingDirectory)
+            artifact: drop
+
+  - stage: Deploy
+    dependsOn: Build
+    jobs:
+      - deployment: deploy_web
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebApp@1
+                  inputs:
+                    azureSubscription: '{{ service_connection }}'
+                    appType: webAppLinux
+                    appName: '{{ app_name }}'
+                    package: $(Pipeline.Workspace)/drop
