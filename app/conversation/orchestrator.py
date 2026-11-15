@@ -6,21 +6,24 @@ from app.conversation.states import ALLOWED, TERMINAL, State
 
 PLAN_TTL = 600  # seconds = 10 minutes
 MAX_CLARIFICATIONS = 3
-DEFAULT_REGION = "westeurope"
+DEFAULT_REGION = "spaincentral"
 DEFAULT_SKUS = {"webapp": "B1", "storage": "Standard_LRS", "sql": "Basic", "keyvault": "standard"}
 
 def apply_defaults(intent):
-        used = []
-        for r in intent.resources:
-            rtype = getattr(r.type, "value", r.type)
-            if not r.region:
-             r.region = DEFAULT_REGION
-             used.append(f"region {DEFAULT_REGION}")
-            if not r.sku and rtype in DEFAULT_SKUS:
-             r.sku = DEFAULT_SKUS[rtype]
-             used.append(f"{rtype} tier {r.sku}")
-        intent.missing_fields = []
-        return used 
+    used = []
+    missing = set(intent.missing_fields)
+    for r in intent.resources:
+        rtype = getattr(r.type, "value", r.type)
+        if "region" in missing or not r.region:
+            r.region = DEFAULT_REGION
+            used.append(f"region {DEFAULT_REGION}")
+        if "name" in missing:
+            used.append(f"name {r.name}")
+        if not r.sku and rtype in DEFAULT_SKUS:
+            r.sku = DEFAULT_SKUS[rtype]
+            used.append(f"{rtype} tier {r.sku}")
+    intent.missing_fields = []
+    return used
 
 @dataclass
 class Session:
