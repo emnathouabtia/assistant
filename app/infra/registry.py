@@ -19,8 +19,12 @@ def register(rtype: ResourceType, spec: TemplateSpec):
 
 
 def clean(name: str) -> str:
-    """Letters and digits only, lowercase (for storage account names)."""
-    return "".join(ch for ch in name.lower() if ch.isalnum())
+    """ASCII letters and digits only, lowercase (for storage account names).
+
+    Azure names are restricted to ASCII, so accented letters must be dropped:
+    `clean("Café")` returns "caf", not "café".
+    """
+    return "".join(ch for ch in name.lower() if ch.isascii() and ch.isalnum())
 
 
 COMMON_TAGS = {"createdBy": "ai-assistant"}
