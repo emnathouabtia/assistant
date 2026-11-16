@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Azure AI Assistant</title>
+  <style>
+    :root {
+      --bg: #f6f7f9; --card: #fff; --ink: #1f2328; --muted: #5b6470;
+      --line: #d7dce2; --accent: #0b5cad; --user: #e8f0fe;
+      --err-bg: #fdecec; --err-line: #e5b4b4; --err-ink: #8a1c1c;
+      --warn-bg: #fff7e6; --warn-line: #e8cf9a; --warn-ink: #7a4b00;
+      --ok: #0f6b3d; --run: #8a5a00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    header {
+      max-width: 860px; margin: 0 auto; padding: 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: .75rem; flex-wrap: wrap;
+    }
+    h1 { font-size: 1.1rem; margin: 0; font-weight: 650; }
+    h2 { font-size: .95rem; margin: .1rem 0 .5rem; }
+    h3 { font-size: .85rem; margin: .75rem 0 .25rem; text-transform: uppercase;
+         letter-spacing: .04em; color: var(--muted); }
+    #banner {
+      max-width: 860px; margin: 0 auto 1rem; padding: .6rem .8rem;
+      border: 1px solid var(--err-line); background: var(--err-bg); color: var(--err-ink);
+      border-radius: 8px;
+    }
+    #log { max-width: 860px; margin: 0 auto; padding: 0 1rem 1rem; }
+    .msg {
+      margin: .6rem 0; padding: .65rem .85rem; border-radius: 10px;
+      border: 1px solid var(--line); background: var(--card); max-width: 94%;
+      overflow-wrap: anywhere;
+    }
+    .msg.user { background: var(--user); border-color: #c9dbf7; margin-left: auto; }
+    .msg.error { background: var(--err-bg); border-color: var(--err-line); color: var(--err-ink); }
+    .msg.question { border-left: 3px solid var(--accent); }
+    .msg.plan, .msg.status, .msg.cost-warning { max-width: 100%; }
+    .msg.cost-warning { background: var(--warn-bg); border-color: var(--warn-line); }
+    .msg.superseded { opacity: .55; }
+    .msg.thinking { color: var(--muted); font-style: italic; }
+    .msg:focus-visible, .msg:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .muted { color: var(--muted); }
+    .small { font-size: .8rem; }
+    .mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .85em; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: .25rem 0; }
+    th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+    th { background: #f0f2f5; font-weight: 600; font-size: .85rem; }
+    tr.chg-create td:first-child { color: var(--ok); font-weight: 600; }
+    tr.chg-delete td:first-child { color: var(--err-ink); font-weight: 600; }
+    tr.chg-modify td:first-child { color: var(--run); font-weight: 600; }
+    .cost { margin: .5rem 0 0; }
+    .warnings { margin: .25rem 0 0; padding-left: 1.1rem; }
+    .warnings li { margin: .2rem 0; }
+    .row { display: flex; gap: .5rem; margin-top: .75rem; flex-wrap: wrap; }
+    button {
+      font: inherit; padding: .45rem .9rem; border-radius: 8px;
+      border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+    }
+    button:hover:not(:disabled) { background: #f0f2f5; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button.primary:hover:not(:disabled) { background: #0a4c8f; }
+    button.small { padding: .15rem .5rem; font-size: .8rem; margin-left: .4rem; }
+    .badge {
+      display: inline-block; padding: .1rem .5rem; border-radius: 999px;
+      font-size: .78rem; font-weight: 600; border: 1px solid var(--line); background: #f0f2f5;
+    }
+    .badge.state.running { background: #fff7e6; border-color: var(--warn-line); color: var(--run); }
+    .badge.state.succeeded { background: #e7f5ec; border-color: #a9d9bd; color: var(--ok); }
+    .badge.state.failed { background: var(--err-bg); border-color: var(--err-line); color: var(--err-ink); }
+    .badge.state.pending { background: #eef1f5; color: var(--muted); }
+    .secret { letter-spacing: .1em; }
+    form { max-width: 860px; margin: 0 auto; padding: 0 1rem; display: flex; gap: .5rem; }
+    input[type=text] {
+      flex: 1; min-width: 0; font: inherit; padding: .6rem .7rem;
+      border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+    }
+    input[type=text]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .examples { max-width: 860px; margin: .5rem auto 2rem; padding: 0 1rem;
+                display: flex; gap: .5rem; flex-wrap: wrap; }
+    .examples button { font-size: .82rem; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+    @media (max-width: 560px) {
+      .msg { max-width: 100%; }
+      header { padding-bottom: .25rem; }
+      th, td { font-size: .82rem; padding: .3rem .4rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Azure AI Assistant</h1>
+    <div class="row" style="margin:0">
+      <span id="mode" class="badge" hidden>mock data</span>
+      <button id="new" type="button">New conversation</button>
+    </div>
+  </header>
+
+  <div id="banner" role="alert" hidden></div>
+
+  <main id="log" aria-live="polite" aria-label="Conversation"></main>
+
+  <form id="composer">
+    <label class="sr-only" for="text">Message</label>
+    <input id="text" type="text" autocomplete="off" maxlength="500" required
+           placeholder="Describe what you want to deploy…">
+    <button id="send" type="submit" class="primary">Send</button>
+  </form>
+
+  <div class="examples" id="examples" aria-label="Example requests"></div>
+
+  <script>
+    "use strict";
+
+    // ?mock renders a scripted conversation with no server at all.
+    const MOCK = new URLSearchParams(location.search).has("mock");
+    const POLL_MS = 2000;
+    const POLL_MAX = 150;          // 5 minutes, then stop
+
+    const log = document.getElementById("log");
+    const input = document.getElementById("text");
+    const sendBtn = document.getElementById("send");
+    const banner = document.getElementById("banner");
+    const composer = document.getElementById("composer");
+
+    let sid = sessionStorage.getItem("sid") || newSid();
+    sessionStorage.setItem("sid", sid);
+    let busy = false;
+    let pollTimer = null;
+    let activePlan = null;         // the card whose buttons are still live
+    let lastPlanId = null;         // cost_warning does not carry the plan_id
+
+    if (MOCK) document.getElementById("mode").hidden = false;
+
+    // ---------- helpers ----------
+
+    function newSid() {
+      if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+      return "s_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    // Build nodes with textContent only: model text is never parsed as HTML.
+    function el(tag, props, ...children) {
+      const node = document.createElement(tag);
+      for (const [key, value] of Object.entries(props || {})) {
+        if (key === "class") node.className = value;
+        else if (key === "text") node.textContent = value;
+        else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+        else if (value !== null && value !== undefined) node.setAttribute(key, value);
+      }
+      for (const child of children.flat()) {
+        if (child === null || child === undefined || child === false) continue;
+        node.append(child.nodeType ? child : document.createTextNode(String(child)));
+      }
+      return node;
+    }
+
+    function append(node) {
+      log.append(node);
+      log.lastElementChild.scrollIntoView({ block: "nearest" });
+      return node;
+    }
+
+    function bubble(cls, text) {
+      return append(el("div", { class: "msg " + cls, text }));
+    }
+
+    function showBanner(text) {
+      banner.textContent = text || "";
+      banner.hidden = !text;
+    }
+
+    function setBusy(on) {
+      busy = on;
+      sendBtn.disabled = on;
+      input.disabled = on;
+      if (!on) input.focus();
+    }
+
+    function stopPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = null;
+    }
+
+    const FINAL = new Set(["succeeded", "failed"]);
+
+    // ---------- rendering: one function per response type ----------
+
+    function render(response) {
+      switch (response.type) {
+        case "question": return bubble("bot question", response.text || "Can you tell me more?");
+        case "info": return bubble("bot", response.text || "");
+        case "error": return bubble("bot error", response.text || "Something went wrong.");
+        case "plan": return renderPlan(response);
+        case "cost_warning": return renderCostWarning(response);
+        case "status": return renderStatus(response);
+        default: return bubble("bot", JSON.stringify(response));
+      }
+    }
+
+    function renderPlan(plan) {
+      lastPlanId = plan.plan_id || null;
+      const card = el("section", { class: "msg bot plan", tabindex: "-1",
+                                   "aria-label": "Deployment plan" });
+      card.append(el("h2", {}, "Plan ", el("span", { class: "muted mono" }, plan.plan_id || "")));
+
+      const changes = plan.summary || [];
+      if (changes.length) {
+        const rows = changes.map((c) => el("tr", { class: "chg-" + String(c.change || "").toLowerCase() },
+          el("td", {}, c.change || ""),
+          el("td", { class: "mono" }, c.resource || ""),
+          el("td", { class: "mono" }, c.name || "")));
+        card.append(el("div", { class: "table-wrap" },
+          el("table", {},
+            el("thead", {}, el("tr", {},
+              el("th", {}, "Change"), el("th", {}, "Resource"), el("th", {}, "Name"))),
+            el("tbody", {}, rows))));
+      } else {
+        card.append(el("p", { class: "muted" }, "No changes: everything already exists."));
+      }
+
+      const cost = Number(plan.estimated_monthly_cost_usd || 0);
+      card.append(el("p", { class: "cost" }, "Estimated cost: ",
+        el("strong", {}, cost === 0 ? "free" : "≈ $" + cost + "/month")));
+
+      const warnings = plan.warnings || [];
+      if (warnings.length) {
+        card.append(el("h3", {}, "Warnings"),
+          el("ul", { class: "warnings" }, warnings.map((w) => el("li", {}, w))));
+      }
+
+      const confirm = el("button", { type: "button", class: "primary" }, "Confirm and deploy");
+      const cancel = el("button", { type: "button" }, "Cancel");
+      const row = el("div", { class: "row" }, confirm, cancel);
+      card.append(row);
+
+      confirm.addEventListener("click", () => decide(card, plan, row, true));
+      cancel.addEventListener("click", () => decide(card, plan, row, false));
+
+      if (activePlan && activePlan !== card) supersede(activePlan);
+      activePlan = card;
+
+      append(card);
+      card.focus();
+      return card;
+    }
+
+    function supersede(card) {
+      card.classList.add("superseded");
+      card.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+      card.append(el("p", { class: "muted small" }, "Superseded by a newer plan."));
+    }
+
+    function decide(card, plan, row, approve) {
+      row.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+      card.classList.add("decided");
+      card.append(el("p", { class: "muted small" },
+        (approve ? "Confirmed" : "Cancelled") + " at " + new Date().toLocaleTimeString()));
+      request("/confirm", {
+        session_id: sid, plan_id: plan.plan_id, approve, accept_cost: false,
+      });
+    }
+
+    function renderCostWarning(warning) {
+      const card = el("section", { class: "msg bot cost-warning", tabindex: "-1",
+                                   "aria-label": "Cost confirmation" });
+      card.append(el("h2", {}, "Above the cost limit"), el("p", {}, warning.text || ""));
+
+      const accept = el("button", { type: "button", class: "primary" }, "I accept the cost");
+      const cancel = el("button", { type: "button" }, "Cancel");
+      const row = el("div", { class: "row" }, accept, cancel);
+      card.append(row);
+
+      accept.addEventListener("click", () => {
+        row.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+        request("/confirm", {
+          session_id: sid, plan_id: lastPlanId, approve: true, accept_cost: true,
+        });
+      });
+      cancel.addEventListener("click", () => {
+        row.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+        request("/confirm", {
+          session_id: sid, plan_id: lastPlanId, approve: false, accept_cost: false,
+        });
+      });
+
+      append(card);
+      card.focus();
+      return card;
+    }
+
+    function statusBody(st) {
+      const nodes = [];
+      const state = st.state || "pending";
+      nodes.push(el("h2", {}, "Deployment ",
+        el("span", { class: "badge state " + state }, state)));
+      nodes.push(el("p", { class: "state-message" }, st.message || ""));
+      if (st.deployment_id) {
+        nodes.push(el("p", { class: "muted mono small" }, st.deployment_id));
+      }
+      if (st.link) {
+        nodes.push(el("p", {}, el("a", { href: st.link, target: "_blank",
+          rel: "noopener noreferrer" }, "View run in Azure DevOps ↗")));
+      }
+      const outputs = unwrap(st.outputs);
+      if (Object.keys(outputs).length) nodes.push(outputsTable(outputs));
+      return nodes;
+    }
+
+    function renderStatus(st) {
+      const card = el("section", { class: "msg bot status", "aria-label": "Deployment status" });
+      card.append(...statusBody(st));
+      append(card);
+      if (!FINAL.has(st.state)) startPolling(card);
+      return card;
+    }
+
+    function unwrap(outputs) {
+      const out = {};
+      for (const [key, value] of Object.entries(outputs || {})) {
+        out[key] = value && typeof value === "object" && "value" in value ? value.value : value;
+      }
+      return out;
+    }
+
+    const SECRET = /password|secret|accountkey|connectionstring/i;
+
+    function outputsTable(outputs) {
+      const rows = Object.entries(outputs).map(([key, value]) => {
+        const cell = el("td", { class: "mono" });
+        if (SECRET.test(key)) {
+          const text = String(value);
+          const shown = el("span", { class: "secret", text: "••••••••" });
+          let visible = false;
+          const toggle = el("button", { type: "button", class: "small" }, "Show");
+          const copy = el("button", { type: "button", class: "small" }, "Copy");
+          toggle.addEventListener("click", () => {
+            visible = !visible;
+            shown.textContent = visible ? text : "••••••••";
+            shown.classList.toggle("secret", !visible);
+            toggle.textContent = visible ? "Hide" : "Show";
+          });
+          copy.addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(text);
+              copy.textContent = "Copied";
+            } catch {
+              copy.textContent = "Select and copy";
+              shown.textContent = text;
+              shown.classList.remove("secret");
+            }
+          });
+          cell.append(shown, toggle, copy,
+            el("div", { class: "muted small" },
+              "Shown once. Save it now; it will not be displayed again."));
+        } else {
+          cell.textContent = String(value);
+        }
+        return el("tr", {}, el("td", { class: "mono" }, key), cell);
+      });
+
+      return el("div", { class: "table-wrap" },
+        el("table", {},
+          el("thead", {}, el("tr", {}, el("th", {}, "Output"), el("th", {}, "Value"))),
+          el("tbody", {}, rows)));
+    }
+
+    function startPolling(card) {
+      stopPolling();
+      let count = 0;
+      pollTimer = setInterval(async () => {
+        count += 1;
+        if (count > POLL_MAX) {
+          stopPolling();
+          card.append(el("p", { class: "muted small" },
+            "Stopped checking. Reload or ask for the status again."));
+          return;
+        }
+        try {
+          const st = await api("GET", "/status/" + encodeURIComponent(sid));
+          if (st.type !== "status") { stopPolling(); return; }
+          card.replaceChildren(...statusBody(st));
+          if (FINAL.has(st.state)) stopPolling();
+        } catch (err) {
+          stopPolling();
+          showBanner("Lost contact with the server: " + err.message);
+        }
+      }, POLL_MS);
+    }
+
+    // ---------- transport ----------
+
+    async function api(method, path, body) {
+      if (MOCK) return mockReply(path, body || {});
+      const res = await fetch(path, {
+        method,
+        headers: body ? { "Content-Type": "application/json" } : {},
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      let data = {};
+      try { data = await res.json(); } catch { /* empty body */ }
+      if (!res.ok) {
+        const detail = data.detail ?? data.text ?? ("HTTP " + res.status);
+        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+      }
+      return data;
+    }
+
+    async function request(path, body) {
+      if (busy) return;
+      setBusy(true);
+      showBanner("");
+      const thinking = bubble("bot thinking", "Thinking…");
+      try {
+        const data = await api("POST", path, body);
+        thinking.remove();
+        render(data);
+      } catch (err) {
+        thinking.remove();
+        showBanner("The request failed: " + err.message);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    // ---------- mock data: one example of every response type ----------
+
+    let mockPolls = 0;
+    let mockPlan = null;
+    const MOCK_OUTPUTS = {
+      storage: {
+        storageAccountName: "stshopx7k2nfdd65fo",
+        blobEndpoint: "https://stshopx7k2nfdd65fo.blob.core.windows.net/",
+      },
+      app: {
+        siteName: "shop-x7k2nfdd65fo",
+        defaultHostName: "shop-x7k2nfdd65fo.azurewebsites.net",
+      },
+      sql: {
+        serverFqdn: "sql-shop-x7k2nfdd65fo.database.windows.net",
+        databaseName: "shop-db",
+        sql_admin_password: "Aa1!Xk29fQz7pLm4Rt",
+      },
+    };
+
+    function mockOutputs(planId) {
+      if (planId === "p_mock1") return MOCK_OUTPUTS.storage;
+      if (planId === "p_mock2") return { ...MOCK_OUTPUTS.app, ...MOCK_OUTPUTS.sql };
+      return MOCK_OUTPUTS.app;
+    }
+
+    function mockReply(path, body) {
+      if (path === "/chat") {
+        const text = (body.message || "").toLowerCase();
+        if (/three|expensive/.test(text)) {
+          const summary = ["alpha", "beta", "gamma"].map((n) => ({
+            change: "Create", resource: "Microsoft.Web/sites", name: n + "-x7k2nfdd65fo",
+          }));
+          return {
+            type: "plan", plan_id: "p_mock3", summary,
+            estimated_monthly_cost_usd: 39,
+            warnings: ["Estimated cost $39/month is above the $30 limit.",
+                       "Defaults used: region spaincentral, webapp tier B1. Is that okay?"],
+          };
+        }
+        if (/web app|database|sql|keyvault/.test(text)) {
+          return {
+            type: "plan", plan_id: "p_mock2",
+            summary: [
+              { change: "Create", resource: "Microsoft.Web/sites", name: "shop-x7k2nfdd65fo" },
+              { change: "Create", resource: "Microsoft.Sql/servers", name: "sql-shop-x7k2nfdd65fo" },
+              { change: "Create", resource: "Microsoft.Sql/servers/databases", name: "shop-db" },
+            ],
+            estimated_monthly_cost_usd: 18,
+            warnings: ["SQL server allows Azure public access; use it only in the sandbox.",
+                       "The web app and the database are deployed separately, so the app has no connection string."],
+          };
+        }
+        if (/storage|blob|bucket/.test(text)) {
+          return {
+            type: "plan", plan_id: "p_mock1",
+            summary: [{ change: "Create", resource: "Microsoft.Storage/storageAccounts", name: "stshopx7k2nfdd65fo" }],
+            estimated_monthly_cost_usd: 1, warnings: [],
+          };
+        }
+        if (/^(yes|deploy|cancel|no)\b/.test(text)) {
+          return { type: "info", text: "Use the buttons on the plan card to confirm or cancel." };
+        }
+        if (/^(hi|hello|hey)\b/.test(text)) {
+          return { type: "info", text: "Hi. Describe what you want to deploy and I will show you a plan before anything is created." };
+        }
+        return { type: "question", text: "Which resource should I create: a web app, a storage account, a SQL database or a Key Vault?" };
+      }
+      if (path === "/confirm") {
+        if (!body.approve) return { type: "info", text: "Cancelled. Nothing was changed." };
+        if (body.plan_id === "p_mock3" && !body.accept_cost) {
+          return { type: "cost_warning",
+                   text: "This plan costs about $39/month, above the $30 limit. Click 'I accept the cost' to deploy anyway." };
+        }
+        mockPolls = 0;
+        mockPlan = body.plan_id;
+        return { type: "status", deployment_id: "d_mock1", state: "running",
+                 message: "Deployment started. Creating resources one by one." };
+      }
+
+      if (path.indexOf("/status/") === 0) {
+        mockPolls += 1;
+        if (mockPolls < 2) {
+          return { type: "status", deployment_id: "d_mock1", state: "running",
+                   message: "Creating resources: 1 of 3 done." };
+        }
+        return {
+          type: "status", deployment_id: "d_mock1", state: "succeeded",
+          message: "Deployment succeeded. Save the SQL admin password now.",
+          link: "https://dev.azure.com/ai-assistant-enicar/ai-assistant/_build/results?buildId=42",
+          outputs: mockOutputs(mockPlan),
+        };
+      }
+
+      return { type: "error", text: "Unknown mock route: " + path };
+    }
+
+    // ---------- wiring ----------
+
+    composer.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text || busy) return;
+      bubble("user", text);
+      input.value = "";
+      request("/chat", { session_id: sid, message: text });
+    });
+
+    document.getElementById("new").addEventListener("click", () => {
+      stopPolling();
+      sid = newSid();
+      sessionStorage.setItem("sid", sid);
+      log.replaceChildren();
+      activePlan = null;
+      lastPlanId = null;
+      mockPolls = 0;
+      mockPlan = null;
+      showBanner("");
+      greet();
+      input.focus();
+    });
+
+    const EXAMPLES = [
+      "Create a Storage account for a shop",
+      "Create a web app and a SQL database",
+      "Deploy three web apps",
+    ];
+
+    for (const text of EXAMPLES) {
+      document.getElementById("examples").append(
+        el("button", { type: "button", text }, )
+      );
+    }
+    document.getElementById("examples").addEventListener("click", (event) => {
+      const btn = event.target.closest("button");
+      if (!btn || busy) return;
+      input.value = btn.textContent;
+      composer.requestSubmit();
+    });
+
+    function greet() {
+      bubble("bot", MOCK
+        ? "Mock mode: no server, no Azure. Try an example below, confirm a plan, and watch the status poll."
+        : "Describe what you want to deploy. I will show you a plan and wait for your confirmation.");
+    }
+
+    greet();
+    input.focus();
+  </script>
+</body>
+</html>
