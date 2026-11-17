@@ -30,15 +30,10 @@ def health():
 def chat(body: ChatIn):
     return orch.handle_chat(body.session_id, body.message)
 
-
 @app.post("/confirm")
 def confirm(body: ConfirmIn):
-    return orch.handle_confirm(body.session_id, body.plan_id, body.approve)
-
+    return orch.handle_confirm(body.session_id, body.plan_id, body.approve, body.accept_cost)
 
 @app.get("/status/{session_id}")
 def status(session_id: str):
     return orch.handle_status(session_id)
-@app.post("/confirm")
-def confirm(body: ConfirmIn):
-    return orch.handle_confirm(body.session_id, body.plan_id, body.approve, body.accept_cost)

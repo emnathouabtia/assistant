@@ -1,3 +1,8 @@
+import shutil
+import subprocess
+
+import pytest
+
 from app.contracts import ResourceSpec
 from app.infra.webapp_registry import webapp_params
 
@@ -18,14 +23,9 @@ def test_uppercase_runtime():
     p = webapp_params(ResourceSpec(type="webapp", name="demo", runtime="Python"))
     assert p["linuxFxVersion"] == "PYTHON|3.12"
 
-
 def test_tags_are_set():
     p = webapp_params(ResourceSpec(type="webapp", name="demo"))
-import shutil
-import subprocess
-
-import pytest
-
+    assert p["tags"]["createdBy"] == "ai-assistant"
 
 @pytest.mark.skipif(shutil.which("az") is None, reason="Azure CLI not installed")
 def test_webapp_bicep_compiles():
@@ -34,3 +34,5 @@ def test_webapp_bicep_compiles():
         capture_output=True, text=True, shell=True,
     )
     assert result.returncode == 0, result.stderr
+
+    
